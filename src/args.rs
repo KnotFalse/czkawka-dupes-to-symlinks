@@ -1,8 +1,8 @@
-use std::path::PathBuf;
-use anyhow::{anyhow, Context, Error, Result};
+use anyhow::{Context, Error, Result};
 use clap::{CommandFactory, Parser, ValueEnum};
 use rayon::prelude::*;
-use serde_json::{json, to_string};
+use serde_json::json;
+use std::path::PathBuf;
 
 pub fn validate_arguments(args: Vec<String>) -> Result<Args, Error> {
     Args::try_parse_from(args).context("Failed attempt at parsing args")
@@ -15,7 +15,7 @@ pub fn print_usage() {
         .unwrap();
 }
 
-pub fn validate_files(input_file_path: &str) -> Result<bool, Error> {
+pub fn validate_files(input_file_path: &str) -> Result<Vec<PathBuf>, Error> {
     let all_files = get_all_files(input_file_path)?;
 
     let json_mimes = [
@@ -42,7 +42,10 @@ pub fn validate_files(input_file_path: &str) -> Result<bool, Error> {
             }
 
             if !json_mimes.contains(&mime.to_string().as_str()) {
-                anyhow::bail!("Input file must be JSON; type is: {}", mime.kind().to_string().to_lowercase().replace("_", ""));
+                anyhow::bail!(
+                    "Input file must be JSON; type is: {}",
+                    mime.kind().to_string().to_lowercase().replace("_", "")
+                );
             }
 
             let file_contents =
@@ -71,7 +74,26 @@ pub fn validate_files(input_file_path: &str) -> Result<bool, Error> {
         ));
     }
 
-    Ok(true)
+    Ok(all_files)
+}
+
+pub fn canonicalize_roots(roots: &[PathBuf]) -> Result<Vec<PathBuf>, Error> {
+    if roots.is_empty() {
+        anyhow::bail!("At least one --allow-root path is required.");
+    }
+
+    roots
+        .iter()
+        .map(|root| {
+            if !root.exists() {
+                anyhow::bail!("Allow-root path does not exist: {}", root.display());
+            }
+
+            std::fs::canonicalize(root).with_context(|| {
+                format!("Failed to canonicalize allow-root path: {}", root.display())
+            })
+        })
+        .collect()
 }
 
 pub(crate) fn get_all_files(input_file_path: &str) -> Result<Vec<PathBuf>, Error> {
@@ -107,6 +129,10 @@ fn czkawka_duplicate_file_json_schema() -> serde_json::Value {
       "title": "Czkawka Duplicates Report",
       "description": "Schema for the JSON output of Czkawka duplicate finder, where files are grouped by size, then by hash.",
       "type": "object",
+      "propertyNames": {
+        "description": "Each property name must be the decimal representation of the file size in bytes.",
+        "pattern": "^[0-9]+$"
+      },
       "additionalProperties": {
         "description": "An array of duplicate groups, keyed by file size. Each inner array represents a set of files with an identical hash.",
         "type": "array",
@@ -168,7 +194,11 @@ pub struct Args {
 
     /// Sets the method to use for determining which duplicate file to keep (aka: the original).
     #[arg(short, long, value_enum, default_value_t = OriginalToKeep::Newest)]
-    pub original_to_keep:OriginalToKeep,
+    pub original_to_keep: OriginalToKeep,
+
+    /// Restricts file modifications to the provided root directories.
+    #[arg(long = "allow-root", value_name = "PATH", num_args = 1.., value_parser = clap::value_parser!(PathBuf))]
+    pub allow_roots: Vec<PathBuf>,
 }
 
 #[derive(ValueEnum, Clone)]
