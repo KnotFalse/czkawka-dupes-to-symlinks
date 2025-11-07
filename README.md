@@ -106,7 +106,7 @@ _A minimal example:_
 ## How It Works
 
 1. **Discover inputs** – The CLI accepts either a single JSON file or a directory tree of JSON files.
-2. **Validate** – Each file is checked for MIME type, parsed, and validated against the schema above. Invalid files abort the run.
+2. **Validate** – Each file must be readable text; after that we parse and validate the JSON against the schema above. MIME sniffing is only used to block obvious binary blobs—the JSON parser + schema are the final gatekeepers. Invalid files abort the run.
 3. **Enforce sandbox** – Every path must live under one of the canonicalized `--allow-root` directories.
 4. **Replace safely** – For each duplicate group:
    - ensure hashes still match

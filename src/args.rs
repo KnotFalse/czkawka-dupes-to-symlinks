@@ -18,13 +18,6 @@ pub fn print_usage() {
 pub fn validate_files(input_file_path: &str) -> Result<Vec<PathBuf>, Error> {
     let all_files = get_all_files(input_file_path)?;
 
-    let json_mimes = [
-        mimetype_detector::APPLICATION_JSON,
-        mimetype_detector::APPLICATION_JSON_BASE,
-        mimetype_detector::APPLICATION_JSON_HAR,
-        mimetype_detector::APPLICATION_JSON_UTF16,
-    ];
-
     let json_schema = jsonschema::draft202012::new(&czkawka_duplicate_file_json_schema())
         .context("Failed to create json schema validator")?;
 
@@ -37,13 +30,6 @@ pub fn validate_files(input_file_path: &str) -> Result<Vec<PathBuf>, Error> {
             if !mime.kind().is_text() {
                 anyhow::bail!(
                     "Input file must be text; type is: {}",
-                    mime.kind().to_string().to_lowercase().replace("_", "")
-                );
-            }
-
-            if !json_mimes.contains(&mime.to_string().as_str()) {
-                anyhow::bail!(
-                    "Input file must be JSON; type is: {}",
                     mime.kind().to_string().to_lowercase().replace("_", "")
                 );
             }
