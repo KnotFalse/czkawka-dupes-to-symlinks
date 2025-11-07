@@ -38,7 +38,7 @@ Add `--dry-run` to preview actions without touching the filesystem.
 | `-i, --input-file-path <PATH>` | Path to a JSON file _or directory_ of JSON files to process |
 | `-a, --allow-root <PATH>` (repeatable, required) | Directories that the tool is allowed to modify. Paths are canonicalized and enforced for every duplicate |
 | `-d, --dry-run` | Log replacements without touching the filesystem |
-| `-o, --original-to-keep <first|last|oldest|newest>` | Strategy for choosing the canonical copy (default `newest`) |
+| `-o, --original-to-keep <first\|last\|oldest\|newest>` | Strategy for choosing the canonical copy (default `newest`) |
 
 ## JSON Schema
 
