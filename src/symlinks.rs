@@ -68,6 +68,8 @@ pub fn replace_duplicates_with_symlinks(args: &args::Args) {
                                 .lock()
                                 .expect("Should be able to unwrap lock")
                                 .push(err);
+
+                            return;
                         }
 
                         let hash = duplicate_group[0].hash.clone();
@@ -98,11 +100,7 @@ pub fn replace_duplicates_with_symlinks(args: &args::Args) {
                             errors.lock().expect("Should be able to unwrap lock").push(
                                 anyhow::anyhow!(
                                     "No files exist for duplicate group:\n\
-                                    {hash}\n\
-                                    {:?}",
-                                    files_that_dont_exist.par_iter()
-                                        .map(|e| &e.path)
-                                        .collect::<Vec<&String>>(),
+                                    {hash}",
                                 ),
                             );
                             return;
@@ -115,7 +113,7 @@ pub fn replace_duplicates_with_symlinks(args: &args::Args) {
 }
 
 fn confirm_hashes_match(elms: &[CzkawkaDuplicateJsonFormatElement]) -> bool {
-    elms.iter()
+    elms.par_iter()
         .map(|e| &e.hash)
         .collect::<Vec<&String>>()
         .windows(2)
@@ -126,8 +124,13 @@ fn replace_files(args: &args::Args, elms: &[CzkawkaDuplicateJsonFormatElement]) 
     let original_file = choose_original_file(args, elms);
     let original_path = std::path::Path::new(&original_file.path);
 
-    for duplicate in &elms[1..] {
+    for duplicate in elms {
         let duplicate_path = std::path::Path::new(&duplicate.path);
+
+        // Skip the original file
+        if duplicate.path == original_file.path {
+            continue;
+        }
 
         if args.dry_run {
             println!(
@@ -172,7 +175,10 @@ fn replace_files(args: &args::Args, elms: &[CzkawkaDuplicateJsonFormatElement]) 
     }
 }
 
-fn choose_original_file<'c>(args: &args::Args, elms: &'c[CzkawkaDuplicateJsonFormatElement]) -> &'c CzkawkaDuplicateJsonFormatElement {
+fn choose_original_file<'a>(
+    args: &args::Args,
+    elms: &'a [CzkawkaDuplicateJsonFormatElement],
+) -> &'a CzkawkaDuplicateJsonFormatElement {
     match args.original_to_keep {
         args::OriginalToKeep::First => &elms[0],
         args::OriginalToKeep::Last => &elms[elms.len() - 1],
@@ -187,8 +193,8 @@ fn choose_original_file<'c>(args: &args::Args, elms: &'c[CzkawkaDuplicateJsonFor
     }
 }
 
-type FileSize = String;
-type CzkawkaDuplicateJsonFormat = HashMap<FileSize, Vec<Vec<CzkawkaDuplicateJsonFormatElement>>>;
+type FileSizeKey = String;
+type CzkawkaDuplicateJsonFormat = HashMap<FileSizeKey, Vec<Vec<CzkawkaDuplicateJsonFormatElement>>>;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 struct CzkawkaDuplicateJsonFormatElement {
