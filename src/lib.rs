@@ -1,6 +1,9 @@
 mod args;
 mod symlinks;
 
+pub use args::{Args, OriginalToKeep, validate_files};
+pub use symlinks::replace_duplicates_with_symlinks;
+
 /// # Project Purpose
 /// Take czkawka duplicate file scan results and replace each duplicate instance with a symlink. This is intended to save disk
 /// space while maintaining file accessibility through the symlink.
