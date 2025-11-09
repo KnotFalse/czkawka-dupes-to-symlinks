@@ -12,6 +12,12 @@ categories = ["command-line-utilities", "filesystem"]
 readme = "README.md"
 exclude = [
     "docs/**",
+    "notes/**",
+    "agent-logs/**",
+    "AGENTS.md",
+]
+exclude = [
+    "docs/**",
     "notes/**"
     "agent-logs/**",
     "AGENTS.md",

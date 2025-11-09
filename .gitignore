@@ -1,1 +1,5 @@
 /target
+agent-logs/
+docs/
+notes/
+.idea/
