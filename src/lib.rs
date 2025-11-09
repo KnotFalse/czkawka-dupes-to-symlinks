@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://docs.rs/czkawka-dupes-to-symlinks/0.1.0")]
+#![doc(html_root_url = "https://docs.rs/czkawka-dupes-to-symlinks/0.1.2")]
 //! # Czkawka Dupes to Symlinks
 //!
 //! A safe, deterministic way to reclaim disk space after running

@@ -69,8 +69,14 @@ fn fails_when_duplicate_folder_cannot_be_staged() {
         fs::set_permissions(&data_dir, perms).expect("set perms");
     }
     #[cfg(windows)]
+    let original_perms = {
+        fs::metadata(&data_dir)
+            .expect("metadata")
+            .permissions()
+    };
+    #[cfg(windows)]
     {
-        let mut perms = fs::metadata(&data_dir).expect("metadata").permissions();
+        let mut perms = original_perms.clone();
         perms.set_readonly(true);
         fs::set_permissions(&data_dir, perms).expect("set perms");
     }
@@ -88,9 +94,7 @@ fn fails_when_duplicate_folder_cannot_be_staged() {
     }
     #[cfg(windows)]
     {
-        let mut perms = fs::metadata(&data_dir).expect("metadata").permissions();
-        perms.set_readonly(false);
-        fs::set_permissions(&data_dir, perms).expect("restore perms");
+        fs::set_permissions(&data_dir, original_perms).expect("restore perms");
     }
 }
 
