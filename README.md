@@ -142,6 +142,16 @@ cargo test
 
 The integration tests spin up temporary directories with real files, so they work on macOS, Linux, and Windows.
 
+### Optional git hook
+
+You can have `cargo fmt --all -- --check` run before every commit:
+
+```bash
+ln -s ../../scripts/git-hooks/pre-commit .git/hooks/pre-commit
+```
+
+Adjust the relative path if your Git tooling stores hooks elsewhere.
+
 ## Caveats
 
 - Creating symlinks on Windows requires either Developer Mode or elevated privileges.
