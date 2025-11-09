@@ -34,8 +34,8 @@ Add `--dry-run` to preview actions without touching the filesystem.
 
 ## Installation Options
 
-- `cargo install czkawka-dupes-to-symlinks` – preferred path once the crate is on crates.io.
-- `cargo binstall czkawka-dupes-to-symlinks` – fast installs from GitHub Release artifacts (after the first tagged release ships).
+- `cargo install czkawka-dupes-to-symlinks` – current release from Crates.io
+- `cargo binstall czkawka-dupes-to-symlinks` – fast installs from GitHub Release artifacts
 - `cargo install --git https://github.com/KnotFalse/czkawka-dupes-to-symlinks` – grab the latest main branch without waiting for a release.
 - Download the platform-specific archive from the GitHub Release page and place the binary on your `$PATH`.
 

@@ -69,11 +69,7 @@ fn fails_when_duplicate_folder_cannot_be_staged() {
         fs::set_permissions(&data_dir, perms).expect("set perms");
     }
     #[cfg(windows)]
-    let original_perms = {
-        fs::metadata(&data_dir)
-            .expect("metadata")
-            .permissions()
-    };
+    let original_perms = { fs::metadata(&data_dir).expect("metadata").permissions() };
     #[cfg(windows)]
     {
         let mut perms = original_perms.clone();
