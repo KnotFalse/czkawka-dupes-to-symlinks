@@ -1,8 +1,42 @@
+//! Symlink replacement engine shared by the CLI entrypoint and any embedding
+//! library consumers. The implementation focuses on determinism and
+//! rollback-friendly filesystem mutations.
+
 use crate::args;
 use anyhow::{Context, Error, Result};
 use rayon::prelude::*;
 use std::collections::HashMap;
 
+/// Replace every duplicate described in the previously validated JSON reports.
+///
+/// The function re-reads the filesystem metadata to ensure hashes still match,
+/// enforces the allow-root sandbox, and stages `*.czkawka-bak` backups so that a
+/// failed symlink operation can be rolled back automatically.
+///
+/// # Errors
+/// - the JSON payload references files outside the declared `allow_roots`
+/// - hashes or live file metadata disagree with the JSON report
+/// - the OS denies renaming or symlink creation
+///
+/// # Examples
+/// ```no_run
+/// use czkawka_dupe_to_symlinks::{
+///     replace_duplicates_with_symlinks, validate_files, Args, OriginalToKeep,
+/// };
+///
+/// # fn main() -> anyhow::Result<()> {
+/// let args = Args {
+///     input_file_path: "/var/reports/czkawka.json".into(),
+///     dry_run: false,
+///     original_to_keep: OriginalToKeep::Newest,
+///     allow_roots: vec!["/srv/media".into()],
+/// };
+///
+/// let files = validate_files(&args.input_file_path)?;
+/// replace_duplicates_with_symlinks(&args, &files)?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn replace_duplicates_with_symlinks(
     args: &args::Args,
     input_files: &[std::path::PathBuf],

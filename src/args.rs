@@ -1,3 +1,7 @@
+//! Argument parsing and validation utilities shared by the CLI and the library
+//! helpers. Everything defined here funnels through the single exported surface
+//! re-exported by `lib.rs`, which keeps the public API intentionally small.
+
 use anyhow::{Context, Error, Result};
 use clap::{CommandFactory, Parser, ValueEnum};
 use rayon::prelude::*;
@@ -15,6 +19,31 @@ pub fn print_usage() {
         .unwrap();
 }
 
+/// Expand and validate one or more JSON reports produced by Czkawka (or any
+/// generator that emits the identical schema).
+///
+/// The input may be a single file or a directory; when a directory is supplied we
+/// walk it recursively and validate **every** JSON file we find.
+///
+/// # Returns
+/// A list of file paths that passed MIME sniffing, JSON parsing, and schema
+/// validation. The caller can pass the returned slice directly to
+/// [`crate::replace_duplicates_with_symlinks`].
+///
+/// # Errors
+/// - the path does not exist or is not a file/directory
+/// - MIME detection reports non-text content
+/// - JSON parsing fails or the document violates the enforced schema
+///
+/// # Examples
+/// ```no_run
+/// use czkawka_dupe_to_symlinks::validate_files;
+///
+/// # fn main() -> anyhow::Result<()> {
+/// let files = validate_files("/tmp/czkawka-reports")?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn validate_files(input_file_path: &str) -> Result<Vec<PathBuf>, Error> {
     let all_files = get_all_files(input_file_path)?;
 
@@ -169,28 +198,41 @@ fn czkawka_duplicate_file_json_schema() -> serde_json::Value {
 }
 #[derive(clap::Parser)]
 #[clap(author, version, about, long_about = None)]
+/// Normalized CLI arguments that can also be constructed programmatically when
+/// embedding the crate.
 pub struct Args {
-    /// Input file path. Can be relative or absolute. Can be a file or directory. A directory will use all files in the directory, recursively.
+    /// Path to a JSON file **or** directory containing JSON reports.
+    ///
+    /// Directories are walked recursively so that large scans can be split across
+    /// multiple documents.
     #[arg(short, long)]
     pub input_file_path: String,
 
-    /// Determines if the duplicate files should actually be replaced with symlinks.
+    /// When enabled, logs every action but leaves the filesystem untouched.
     #[arg(short, long, default_value_t = false)]
     pub dry_run: bool,
 
-    /// Sets the method to use for determining which duplicate file to keep (aka: the original).
+    /// Strategy for picking the canonical file inside each duplicate group.
     #[arg(short, long, value_enum, default_value_t = OriginalToKeep::Newest)]
     pub original_to_keep: OriginalToKeep,
 
-    /// Restricts file modifications to the provided root directories.
+    /// Canonicalized directories that bound filesystem changes.
+    ///
+    /// Every duplicate must live under one of these roots or it will be skipped
+    /// with an error.
     #[arg(long = "allow-root", value_name = "PATH", num_args = 1.., value_parser = clap::value_parser!(PathBuf))]
     pub allow_roots: Vec<PathBuf>,
 }
 
 #[derive(ValueEnum, Clone)]
+/// How the canonical/original file is chosen inside a duplicate group.
 pub enum OriginalToKeep {
+    /// Select the first entry encountered in the JSON document (stable order).
     First,
+    /// Select the last entry encountered in the JSON document (stable order).
     Last,
+    /// Re-stat every path and keep the file with the oldest modification time.
     Oldest,
+    /// Re-stat every path and keep the file with the newest modification time.
     Newest,
 }

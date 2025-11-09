@@ -1,19 +1,82 @@
+#![doc(html_root_url = "https://docs.rs/czkawka-dupes-to-symlinks/0.1.0")]
+//! # Czkawka Dupes to Symlinks
+//!
+//! A safe, deterministic way to reclaim disk space after running
+//! [Czkawka](https://github.com/qarmin/czkawka)'s duplicate scanner. The CLI
+//! replaces redundant files with symlinks and automatically rolls back whenever a
+//! step fails, while the library API exposes the same safety guarantees for
+//! custom tooling.
+//!
+//! ## When to use this crate
+//! - Run the **CLI** via `cargo install czkawka-dupes-to-symlinks` to process Czkawka JSON reports.
+//! - Embed the **library** when you want to validate JSON reports programmatically
+//!   and invoke the symlink replacement engine from your own UI/automation.
+//!
+//! ## Quick start (CLI)
+//! ```text
+//! czkawka-dupes-to-symlinks \
+//!     --input-file-path /tmp/czkawka.json \
+//!     --allow-root /srv/media --allow-root /srv/backups
+//! ```
+//!
+//! Add `--dry-run` to preview changes without touching the filesystem.
+//!
+//! ## Quick start (library)
+//! ```no_run
+//! use czkawka_dupe_to_symlinks::{
+//!     replace_duplicates_with_symlinks, validate_files, Args, OriginalToKeep,
+//! };
+//!
+//! # fn main() -> anyhow::Result<()> {
+//! let args = Args {
+//!     input_file_path: "/tmp/czkawka.json".into(),
+//!     dry_run: false,
+//!     original_to_keep: OriginalToKeep::Newest,
+//!     allow_roots: vec!["/srv/media".into(), "/srv/backups".into()],
+//! };
+//!
+//! let files = validate_files(&args.input_file_path)?;
+//! replace_duplicates_with_symlinks(&args, &files)?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## JSON expectations
+//! Reports must match the structure that Czkawka emits:
+//! - the root object is keyed by **file size** (as decimal strings)
+//! - every value is a list of duplicate groups; each group contains ≥ 2 entries
+//! - every entry includes `path`, `modified_date` (Unix epoch seconds), `size`,
+//!   and a content `hash`
+//! - hashes inside a group must match—`replace_duplicates_with_symlinks`
+//!   re-checks them as a guardrail
+//!
+//! See [`validate_files`] for details on the runtime schema validation.
+//!
+//! ## Safety guardrails
+//! - All file operations are restricted to the canonicalized `--allow-root`
+//!   directories.
+//! - Every replacement stages a `*.czkawka-bak` backup and restores it if the
+//!   symlink cannot be created.
+//! - Dry runs (`--dry-run`) exercise the entire pipeline but leave the
+//!   filesystem untouched.
+//!
+//! ## Exit semantics
+//! | Code | Meaning |
+//! |------|---------|
+//! | `0` | All duplicates were processed or intentionally skipped. |
+//! | `1` | At least one duplicate could not be processed (outside sandbox, missing file, permission error, etc.). |
+
 mod args;
 mod symlinks;
 
 pub use args::{Args, OriginalToKeep, validate_files};
 pub use symlinks::replace_duplicates_with_symlinks;
 
-/// # Project Purpose
-/// Take czkawka duplicate file scan results and replace each duplicate instance with a symlink. This is intended to save disk
-/// space while maintaining file accessibility through the symlink.
+/// Run the CLI entrypoint.
 ///
-/// This project is cross-platform and safe fore use on Windows, Linux, and MacOS systems.
-///
-/// This function will start the program. It:
-/// - Checks for the correct arguments
-/// - Validates the file input
-/// - Replaces duplicate files with symlinks
+/// This helper mirrors what `src/main.rs` does: parse the command-line arguments,
+/// enforce the safety guardrails, and exit with a descriptive non-zero status if
+/// any duplicate fails to process.
 pub fn start() {
     let args: Vec<String> = std::env::args().collect();
     let valid_args = args::validate_arguments(args);

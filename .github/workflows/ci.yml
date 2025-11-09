@@ -22,6 +22,14 @@ jobs:
         run: cargo clippy --all-targets --all-features -- -D warnings
       - name: cargo test
         run: cargo test --all-targets --all-features
+      - name: cargo doc (strict)
+        env:
+          RUSTDOCFLAGS: -D warnings -D rustdoc::broken_intra_doc_links -W missing_docs
+        run: cargo doc --no-deps
+      - name: cargo doc (docs.rs parity)
+        env:
+          DOCS_RS: "1"
+        run: cargo doc --no-deps
 
   security-audit:
     name: cargo audit
