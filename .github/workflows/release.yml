@@ -1,0 +1,105 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  quality:
+    name: Lint and test gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --all-targets --all-features -- -D warnings
+      - run: cargo test --all-targets --all-features
+
+  publish-crate:
+    name: Publish to crates.io
+    needs: quality
+    runs-on: ubuntu-latest
+    environment: crates-io
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Authenticate via Trusted Publishing
+        id: auth
+        uses: rust-lang/crates-io-auth-action@v1
+      - name: Publish crate
+        run: cargo publish --locked
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+
+  build-artifacts:
+    name: Build release artifacts (${{ matrix.target }})
+    needs: quality
+    runs-on: ${{ matrix.os }}
+    env:
+      VERSION: ${{ github.ref_name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_ext: tar.gz
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_ext: tar.gz
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_ext: zip
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build release binary
+        run: cargo build --release
+      - name: Package artifact (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          ARTIFACT="czkawka-dupes-to-symlinks-${VERSION}-${{ matrix.target }}"
+          mkdir -p dist/${ARTIFACT}/bin
+          cp target/release/czkawka-dupes-to-symlinks dist/${ARTIFACT}/bin/
+          cp README.md dist/${ARTIFACT}/
+          cp LICENSE-* dist/${ARTIFACT}/
+          tar -C dist -czf ${ARTIFACT}.tar.gz ${ARTIFACT}
+          shasum -a 256 ${ARTIFACT}.tar.gz > ${ARTIFACT}.tar.gz.sha256
+      - name: Package artifact (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $artifact = "czkawka-dupes-to-symlinks-$env:VERSION-${{ matrix.target }}"
+          New-Item -ItemType Directory -Path dist/$artifact/bin -Force | Out-Null
+          Copy-Item target/release/czkawka-dupes-to-symlinks.exe dist/$artifact/bin/
+          Copy-Item README.md dist/$artifact/
+          Get-ChildItem LICENSE-* | Copy-Item -Destination dist/$artifact/
+          Compress-Archive -Path dist/$artifact -DestinationPath "$artifact.zip"
+          Get-FileHash "$artifact.zip" -Algorithm SHA256 | ForEach-Object { "$( $_.Hash.ToLower() )  $artifact.zip" } | Out-File "$artifact.zip.sha256"
+      - name: Upload artifact bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: |
+            *.${{ matrix.artifact_ext }}
+            *.${{ matrix.artifact_ext }}.sha256
+
+  release-artifacts:
+    name: Attach artifacts to GitHub Release
+    needs: build-artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

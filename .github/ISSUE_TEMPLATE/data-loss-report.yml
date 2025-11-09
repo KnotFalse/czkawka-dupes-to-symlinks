@@ -1,0 +1,47 @@
+name: Potential Data Loss
+description: Report files that were deleted or corrupted while using the tool.
+labels: ["bug", "data-loss"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Fill out every field so we can reproduce the issue quickly.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the data that was lost and the expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: cli-output
+    attributes:
+      label: CLI output
+      description: Paste the log with `--dry-run` if possible. Redact sensitive paths.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include OS, filesystem type, Rust version/binary version, and whether Developer Mode/elevation was used.
+    validations:
+      required: true
+  - type: textarea
+    id: json-snippet
+    attributes:
+      label: JSON snippet
+      description: Provide a minimized duplicate-group sample (hash + paths) to reproduce the issue.
+    validations:
+      required: false
+  - type: dropdown
+    id: allow-root
+    attributes:
+      label: Were all affected paths inside `--allow-root` directories?
+      options:
+        - Yes
+        - No
+        - Unsure
+    validations:
+      required: true

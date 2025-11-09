@@ -1,5 +1,8 @@
 # Czkawka Dupe to Symlinks
 
+[![Crates.io](https://img.shields.io/crates/v/czkawka-dupes-to-symlinks.svg)](https://crates.io/crates/czkawka-dupes-to-symlinks)
+[![docs.rs](https://img.shields.io/docsrs/czkawka-dupes-to-symlinks)](https://docs.rs/czkawka-dupes-to-symlinks)
+
 _A careful CLI for reclaiming disk space by turning duplicate files into symlinks._
 
 This project started as a companion for [Czkawka](https://github.com/qarmin/czkawka)'s `czkawka_cli` JSON duplicate reports, but it works with **any** JSON document that matches the schema enforced below. If you produce the same structure from another tool, this binary will happily deduplicate it.
@@ -13,16 +16,28 @@ This project started as a companion for [Czkawka](https://github.com/qarmin/czka
 ## Quick Start
 
 ```bash
-# Build from source
+# Install from crates.io
+cargo install czkawka-dupes-to-symlinks
+
+# (Optional) install from a local checkout
 cargo install --path .
 
 # Run against a Czkawka JSON export
-czkawka_dupe_to_symlinks \
+czkawka-dupes-to-symlinks \
   --input-file-path ~/czkawka_duplicates.json \
   --allow-root /srv/media --allow-root /srv/backups
 ```
 
 Add `--dry-run` to preview actions without touching the filesystem.
+
+> _Planning ahead_: Once we publish prebuilt archives you will also be able to use `cargo binstall czkawka-dupes-to-symlinks` for instant installs.
+
+## Installation Options
+
+- `cargo install czkawka-dupes-to-symlinks` – preferred path once the crate is on crates.io.
+- `cargo binstall czkawka-dupes-to-symlinks` – fast installs from GitHub Release artifacts (after the first tagged release ships).
+- `cargo install --git https://github.com/KnotFalse/czkawka-dupes-to-symlinks` – grab the latest main branch without waiting for a release.
+- Download the platform-specific archive from the GitHub Release page and place the binary on your `$PATH`.
 
 ### Exit semantics
 
@@ -132,6 +147,13 @@ The integration tests spin up temporary directories with real files, so they wor
 - Creating symlinks on Windows requires either Developer Mode or elevated privileges.
 - `--allow-root` paths must already exist; canonicalization will fail otherwise.
 - Czkawka outputs absolute paths by default. If you generate relative paths, they’re interpreted relative to the filesystem entry itself on Unix and relative to the process on Windows—consider canonicalizing upstream.
+
+## Troubleshooting
+
+- **"At least one --allow-root must be provided"** – double-check that you passed `--allow-root` at least once and that paths don’t expand to blank strings (quote shell globs).
+- **"Path ... is outside the allow-root sandbox"** – canonicalization happens before processing; ensure the JSON file only references directories you explicitly added via `--allow-root`.
+- **Windows symlink failures** – enable Developer Mode or run an elevated PowerShell terminal so `std::os::windows::fs::symlink_file` can create links.
+- **"Failed to validate provided allow-root paths"** – each directory must exist before launching the tool; create empty placeholder directories if needed.
 
 ## License
 

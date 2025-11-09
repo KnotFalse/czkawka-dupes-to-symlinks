@@ -1,7 +1,28 @@
 [package]
-name = "czkawka_dupe_to_symlinks"
+name = "czkawka-dupes-to-symlinks"
 version = "0.1.0"
 edition = "2024"
+description = "Safely turn Czkawka duplicate reports into space-saving symlinks"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/KnotFalse/czkawka-dupes-to-symlinks"
+homepage = "https://github.com/KnotFalse/czkawka-dupes-to-symlinks"
+documentation = "https://docs.rs/czkawka-dupes-to-symlinks"
+keywords = ["czkawka", "deduplication", "symlink", "cli", "filesystem"]
+categories = ["command-line-utilities", "filesystem"]
+readme = "README.md"
+exclude = [
+    "docs/**",
+    "notes/**"
+    "agent-logs/**",
+    "AGENTS.md",
+]
+
+[lib]
+name = "czkawka_dupe_to_symlinks"
+
+[[bin]]
+name = "czkawka-dupes-to-symlinks"
+path = "src/main.rs"
 
 [dependencies]
 anyhow = "1"

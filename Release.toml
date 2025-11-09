@@ -1,0 +1,8 @@
+allow-branch = ["main", "master"]
+tag-prefix = "v"
+consolidate-commits = true
+push-remote = "github"
+shared-version = true
+publish = true
+pre-release-commit-message = "chore: release {{crate_name}} v{{version}}"
+post-release-commit-message = "chore: start next development iteration"
