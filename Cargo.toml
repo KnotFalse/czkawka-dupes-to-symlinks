@@ -10,15 +10,10 @@ documentation = "https://docs.rs/czkawka-dupes-to-symlinks"
 keywords = ["czkawka", "deduplication", "symlink", "cli", "filesystem"]
 categories = ["command-line-utilities", "filesystem"]
 readme = "README.md"
+
 exclude = [
     "docs/**",
     "notes/**",
-    "agent-logs/**",
-    "AGENTS.md",
-]
-exclude = [
-    "docs/**",
-    "notes/**"
     "agent-logs/**",
     "AGENTS.md",
 ]
