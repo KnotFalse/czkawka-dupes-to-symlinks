@@ -2,6 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/czkawka-dupes-to-symlinks.svg)](https://crates.io/crates/czkawka-dupes-to-symlinks)
 [![docs.rs](https://img.shields.io/docsrs/czkawka-dupes-to-symlinks)](https://docs.rs/czkawka-dupes-to-symlinks)
+[![License](https://img.shields.io/crates/l/czkawka-dupes-to-symlinks?style=flat)](https://crates.io/crates/czkawka-dupes-to-symlinks)
 
 _A careful CLI for reclaiming disk space by turning duplicate files into symlinks._
 
