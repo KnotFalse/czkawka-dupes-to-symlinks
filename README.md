@@ -156,6 +156,7 @@ Adjust the relative path if your Git tooling stores hooks elsewhere.
 ## Caveats
 
 - Creating symlinks on Windows requires either Developer Mode or elevated privileges.
+- **Windows permission limitations** – Windows file and directory permission semantics differ from POSIX systems. The tool's safety mechanisms that rely on permission checks (such as detecting when files cannot be staged or moved) may not work as reliably on Windows as they do on Unix-like systems. This means certain error conditions that would be caught on Linux/macOS might not be detected on Windows.
 - `--allow-root` paths must already exist; canonicalization will fail otherwise.
 - Czkawka outputs absolute paths by default. If you generate relative paths, they’re interpreted relative to the filesystem entry itself on Unix and relative to the process on Windows—consider canonicalizing upstream.
 
