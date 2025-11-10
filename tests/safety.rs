@@ -17,7 +17,12 @@ fn canonicalize(path: &std::path::Path) -> std::path::PathBuf {
     std::fs::canonicalize(path).expect("Failed to canonicalize path")
 }
 
+// Windows permission semantics do not reliably prevent the replace_duplicates_with_symlinks
+// operation when directory permissions are changed, causing this test to be non-deterministic
+// on Windows CI (see failing job 54923386465). The test is kept for Unix platforms where
+// POSIX permissions allow reliable simulation of staging failures.
 #[test]
+#[cfg_attr(windows, ignore)]
 fn fails_when_duplicate_folder_cannot_be_staged() {
     let temp = TempDir::new().expect("tempdir");
     let root = temp.path();
